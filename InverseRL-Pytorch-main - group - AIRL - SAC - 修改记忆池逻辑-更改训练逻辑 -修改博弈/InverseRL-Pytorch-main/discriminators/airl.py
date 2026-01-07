@@ -365,7 +365,7 @@ class AIRL(Discriminator):
 
         utility_mat = torch.cat([Epp_u_total, Epw_u_total, Evp_total, Evw_total], dim=0)
         return utility_mat.reshape(state_flat.shape[0], 4).to(self.device)
-    def get_f(self,all_state, state_flat,action,next_state_flat,done_mask):
+    def get_f(self,all_state, state_flat,action,next_state_flat,done_mask, using_game=True):
         ## 输出轨迹为真的概率
         data_pedestrain = (all_state[:, 0], all_state[:, 2],
                            all_state[:, 4])
@@ -379,8 +379,9 @@ class AIRL(Discriminator):
         like_reward_v = self.g_v.forward(data_vehicle, type='vehicle')
         like_reward = torch.cat((like_reward_p, like_reward_v), dim=1)
         # 隐去博弈
-        game_utility = self.evolutionary_game_utility(state_flat,data_pedestrain,data_vehicle) / 10
-        like_reward = like_reward * game_utility
+        if using_game:
+            game_utility = self.evolutionary_game_utility(state_flat,data_pedestrain,data_vehicle) / 10
+            like_reward = like_reward * game_utility
         like_reward = self.fc_fusion(like_reward)
         like_reward = like_reward + done_mask.reshape(done_mask.shape[0],1).float() * (self.args.gamma * self.h(next_state_flat)  - self.h(state_flat))
 
@@ -389,16 +390,16 @@ class AIRL(Discriminator):
 
 
         return torch.clamp(like_reward, min=-50, max=50)
-    def get_d(self,log_prob, all_state, state_flat,action,next_state_flat,done_mask):
-        exp_f = torch.exp(self.get_f(all_state, state_flat,action,next_state_flat,done_mask)).cpu()
+    def get_d(self,log_prob, all_state, state_flat,action,next_state_flat,done_mask, using_game=True):
+        exp_f = torch.exp(self.get_f(all_state, state_flat,action,next_state_flat,done_mask,using_game)).cpu()
         ## 确定性策略，所以为1
         d = exp_f / (exp_f + torch.exp(log_prob).cpu())
         return d
-    def get_reward(self,log_prob, all_state, state_flat,action,next_state_flat,done):
+    def get_reward(self,log_prob, all_state, state_flat,action,next_state_flat,done, using_game=True):
         done_mask = torch.ones(done.shape).to(self.device)
         # done_mask = torch.ones(done.shape)(1 - done.float()).to(self.device)
         #return (self.get_f(state,action,next_state,done_mask) - log_prob).detach()
-        d = (self.get_d(log_prob, all_state, state_flat,action,next_state_flat,done_mask)).detach()
+        d = (self.get_d(log_prob, all_state, state_flat,action,next_state_flat,done_mask,using_game)).detach()
         reward = (torch.log(d + 1e-3) - torch.log((1-d)+1e-3))
         return reward
         

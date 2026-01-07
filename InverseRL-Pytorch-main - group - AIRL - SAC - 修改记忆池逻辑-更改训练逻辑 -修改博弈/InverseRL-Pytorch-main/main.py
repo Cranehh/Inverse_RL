@@ -195,7 +195,8 @@ else : #off-policy
                             all_state,
                             torch.tensor(state_flat).unsqueeze(0).float().to(device),action,\
                             torch.tensor(next_state_flat).unsqueeze(0).float().to(device),\
-                                                  torch.tensor(done).unsqueeze(0)\
+                                                  torch.tensor(done).unsqueeze(0),\
+                                                using_game=True\
                                                  ).item()
             else:
                 reward = discriminator.get_reward(all_state).item()
