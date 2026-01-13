@@ -570,6 +570,78 @@ for i in range(env.env_state_pedestrain.shape[0]):
 gap_y = sum(ls_ax_pedestrian_sum) / sum(ls_ax_pedestrian_num)
 
 # %%
+## vx_pedestrian
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,0,3])
+    ls_ax_pedestrian_num.extend(env.env_state_pedestrain[i][:,0,3])
+v_x_pedestrian_var = np.var(ls_ax_pedestrian_sum)
+
+## vy_pedestrian
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,0,4])
+v_y_pedestrian_var = np.var(ls_ax_pedestrian_sum)
+
+## ax_pedestrian
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,0,5])
+a_x_pedestrian_var = np.var(ls_ax_pedestrian_sum)
+
+## ay_pedestrian
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,0,6])
+a_y_pedestrian_var = np.var(ls_ax_pedestrian_sum)
+
+## vx_vehicle
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,1,3])
+v_x_vehicle_var = np.var(ls_ax_pedestrian_sum)
+
+## vy_vehicle
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,1,4])
+v_y_vehicle_var = np.var(ls_ax_pedestrian_sum)
+
+## ax_vehicle
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,1,5])
+a_x_vehicle_var = np.var(ls_ax_pedestrian_sum)
+
+## ay_vehicle
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_state_pedestrain[i][:,1,6])
+a_y_vehicle_var = np.var(ls_ax_pedestrian_sum)
+
+## gap_x
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_position_vehicle[i][:,0,0] - env.env_position_vehicle[i][:,1,0])
+gap_x_var = np.var(ls_ax_pedestrian_sum)
+
+## gap_y
+ls_ax_pedestrian_sum = []
+ls_ax_pedestrian_num = []
+for i in range(env.env_state_pedestrain.shape[0]):
+    ls_ax_pedestrian_sum.extend(env.env_position_vehicle[i][:,0,1] - env.env_position_vehicle[i][:,1,1])
+gap_y_var = np.var(ls_ax_pedestrian_sum)
+
+# %%
 ## 调整车速和横纵向距离
 
 # %%
@@ -3794,6 +3866,1092 @@ plt.show()
 
 
 # %% [markdown]
+# ## 群体规模对奖励函数的影响
+
+# %%
+# =============================================
+# 群体规模边际效应分析 - 整合到validation_pure_code.py
+# 将此代码添加到您的validation_pure_code.py文件末尾
+# =============================================
+
+# %% [markdown]
+# ## 群体规模对奖励函数的边际效应分析
+# Marginal Effect Analysis of Group Size on Reward Function
+
+# %%
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+import pandas as pd
+
+# =============================================
+# 1. 场景参数的多元正态分布采样器
+# =============================================
+
+class ScenarioSampler:
+    """
+    基于多元正态分布的场景采样器
+    三种场景(near, medium, far)各占1/3
+    """
+    
+    def __init__(self, attri_list):
+        # 参数顺序: [gap_x, gap_y, v_x_ped, v_y_ped, v_x_veh, v_y_veh]
+        
+        # Near场景: 近距离交互
+        self.near_mean = np.array([2.0, 5.0, 0.5, -1.0, 0.0, 5.0])
+        self.near_cov = np.diag([0.5, 1.0, 0.2, 0.3, 0.1, 1.0])
+        
+        # Medium场景: 中等距离交互
+        self.medium_mean = np.array([attri_list[0], attri_list[1], attri_list[2], attri_list[3], attri_list[4], attri_list[5]])
+        # self.medium_cov = np.diag([1.0, 2.0, 0.3, 0.4, 0.1, 1.5])
+        self.medium_cov = np.diag([gap_x_var, gap_y_var, v_x_pedestrian_var, v_y_pedestrian_var, v_x_vehicle_var, v_y_vehicle_var])
+        # Far场景: 远距离交互
+        self.far_mean = np.array([10.0, 15.0, 1.5, -2.0, 0.0, 10.0])
+        self.far_cov = np.diag([2.0, 3.0, 0.4, 0.5, 0.1, 2.0])
+    
+    def sample(self, n_samples):
+        n_per_scenario = n_samples 
+        # n_remaining = n_samples - 3 * n_per_scenario
+        
+        # near_samples = np.random.multivariate_normal(self.near_mean, self.near_cov, n_per_scenario)
+        medium_samples = np.random.multivariate_normal(self.medium_mean, self.medium_cov, n_per_scenario)
+        # far_samples = np.random.multivariate_normal(self.far_mean, self.far_cov, n_per_scenario + n_remaining)
+        
+        samples = medium_samples
+        scenario_labels = ['medium'] * n_per_scenario 
+        
+        # 参数约束
+        samples[:, 0] = np.clip(samples[:, 0], 0.1, 20.0)  # gap_x
+        samples[:, 1] = np.clip(samples[:, 1], 0.1, 25.0)  # gap_y
+        samples[:, 2] = np.clip(samples[:, 2], -3.0, 3.0)  # v_x_ped
+        samples[:, 3] = np.clip(samples[:, 3], -4.0, 0.0)  # v_y_ped
+        samples[:, 4] = np.clip(samples[:, 4], -2.0, 2.0)  # v_x_veh
+        samples[:, 5] = np.clip(samples[:, 5], 0.0, 15.0)  # v_y_veh
+        
+        # 随机打乱
+        indices = np.random.permutation(len(samples))
+        samples = samples[indices]
+        scenario_labels = [scenario_labels[i] for i in indices]
+        
+        return samples, scenario_labels
+
+# %%
+# %%
+# =============================================
+# 2. 边际效应分析主函数
+# =============================================
+
+def run_marginal_effect_analysis(n_samples_per_group=150, random_seed=42, attri_list=[5.0, 10.0, 1.0, -1.5, 0.0, 7.5]):
+    """
+    执行边际效应分析
+    """
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+    
+    group_sizes = [1, 2]
+    sampler = ScenarioSampler(attri_list)
+    all_results = []
+    
+    print("=" * 60)
+    print("开始边际效应分析")
+    print("=" * 60)
+    
+    for group_size in group_sizes:
+        print(f"\n处理群体规模 = {group_size}...")
+        params_samples, scenario_labels = sampler.sample(n_samples_per_group)
+        
+        for params, scenario in zip(params_samples, scenario_labels):
+            gap_x, gap_y, v_x_ped, v_y_ped, v_x_veh, v_y_veh = params
+            
+            # 重置环境
+            state_flat, all_state = env.reset()
+            
+            # 设置位置
+            position_x_pedestrian = gap_x
+            position_y_pedestrian = gap_y
+            position_x_vehicle = 0.0
+            position_y_vehicle = 0.0
+            
+            # 设置群体规模
+            all_state[0][4] = group_size
+            all_state[0][5] = group_size
+            
+
+            # 清空多余状态
+            state_flat[8:48] = 0
+            state_flat[64:96] = 0
+            state_flat[98:108] = 0
+            state_flat[112:] = 0
+            
+            # 设置主行人状态
+            state_flat[3], state_flat[51] = v_x_ped, v_x_ped
+            state_flat[4], state_flat[52] = v_y_ped, v_y_ped
+            state_flat[5], state_flat[53] = a_x_pedestrian, a_x_pedestrian  # a_x
+            state_flat[6], state_flat[54] = a_y_pedestrian, a_y_pedestrian  # a_y
+            state_flat[7], state_flat[55] = math.atan2(v_y_ped, v_x_ped), math.atan2(v_y_ped, v_x_ped)
+            
+            # 主行人位置
+            state_flat[96], state_flat[108] = position_x_pedestrian, position_x_pedestrian
+            state_flat[97], state_flat[109] = position_y_pedestrian, position_y_pedestrian
+            
+            # 设置周围行人（环绕分布）
+            if group_size > 1:
+                radius = np.random.uniform(0.5, 2.0)  # 随机半径
+                angles = np.random.uniform(0, 2 * np.pi, group_size - 1)  # 随机角度
+                
+                for i, angle in enumerate(angles):
+                    if i >= 5:
+                        break
+                    x_pos = position_x_pedestrian + radius * np.cos(angle)
+                    y_pos = position_y_pedestrian + radius * np.sin(angle)
+                    
+                    # 随机速度比例 (0.7-1.1倍主行人速度) 和角度扰动
+                    speed_ratio = np.random.uniform(0.7, 1.1)
+
+                    surr_v_x = v_x_ped * speed_ratio + np.random.normal(0, 0.1)
+                    surr_v_y = v_y_ped * speed_ratio + np.random.normal(0, 0.1)
+                    surr_heading = math.atan2(surr_v_y, surr_v_x)
+
+                    # all_state设置
+                    all_state[0][0][i + 1, 0] = all_state[0][0][0, 0]
+                    all_state[0][0][i + 1, 1] = all_state[0][0][0, 1]
+                    all_state[0][0][i + 1, 2] = all_state[0][0][0, 2]
+                    all_state[0][0][i + 1, 3] = surr_v_x
+                    all_state[0][0][i + 1, 4] = surr_v_y
+                    all_state[0][0][i + 1, 5] = a_x_pedestrian
+                    all_state[0][0][i + 1, 6] = a_y_pedestrian
+                    all_state[0][0][i + 1, 7] = surr_heading
+                    
+
+
+                    # state_flat设置
+                    idx = 8 * (i + 1)
+                    state_flat[idx + 3] = surr_v_x
+                    state_flat[idx + 4] = surr_v_y
+                    state_flat[idx + 5] = a_x_pedestrian
+                    state_flat[idx + 6] = a_y_pedestrian
+                    state_flat[idx + 7] = surr_heading
+                    
+                    # 位置
+                    all_state[0][2][i + 1, 0]  = x_pos
+                    all_state[0][2][i + 1, 1]  = y_pos
+                    state_flat[98 + 2*i] = x_pos
+                    state_flat[99 + 2*i] = y_pos
+            
+            state_flat[0:48:8] = state_flat[0]
+            state_flat[1:48:8] = state_flat[1]
+            state_flat[2:48:8] = state_flat[2]
+
+            # 设置主行人all_state
+            all_state[0][2][0, 0] = position_x_pedestrian
+            all_state[0][2][0, 1] = position_y_pedestrian
+            all_state[0][0][0, 3] = v_x_ped
+            all_state[0][0][0, 4] = v_y_ped
+            all_state[0][0][0, 5] = a_x_pedestrian
+            all_state[0][0][0, 6] = a_y_pedestrian
+            all_state[0][0][0, 7] = math.atan2(v_y_ped, v_x_ped)
+
+            # 车辆状态设置
+            # all_state[0][1][2:,:] = 0
+            all_state[0][1][0, 3] = v_x_ped
+            all_state[0][1][0, 4] = v_y_ped
+            all_state[0][1][0, 5] = a_x_pedestrian
+            all_state[0][1][0, 6] = a_y_pedestrian
+            all_state[0][1][0, 7] = (math.atan2(v_x_ped, v_y_ped))
+            all_state[0][1][1, 3] = speed_x_vehicle
+            all_state[0][1][1, 4] = speed_y_vehicle
+            all_state[0][1][1, 5] = a_x_vehicle
+            all_state[0][1][1, 6] = a_y_vehicle
+            all_state[0][1][1, 7] = math.atan2(speed_y_vehicle, speed_x_vehicle)
+
+            ## 车辆位置设置
+            # all_state[0][3][2:,:] = 0
+            all_state[0][3][0, 0] = position_x_pedestrian
+            all_state[0][3][0, 1] = position_y_pedestrian
+            all_state[0][3][1,0] = position_x_vehicle
+            all_state[0][3][1,1] = position_y_vehicle
+
+
+            # 设置车辆状态
+            state_flat[59] = v_x_veh
+            state_flat[60] = v_y_veh
+            state_flat[61] = a_x_vehicle  #x加速度
+            state_flat[62] = a_y_vehicle  #y加速度
+            state_flat[63] = math.atan2(v_y_veh, v_x_veh)
+            state_flat[110] = position_x_vehicle
+            state_flat[111] = position_y_vehicle
+            
+            # 获取动作和奖励
+            action, log_prob = agent.get_action(torch.from_numpy(state_flat).float().to(device))
+            action = torch.tensor(action).cpu().detach().numpy()[0]
+            log_prob = log_prob.to(device)
+            
+            next_state_flat = update(action, state_flat)
+            done = False
+            
+            reward = discriminator.get_reward(
+                log_prob, all_state,
+                torch.tensor(state_flat).unsqueeze(0).float().to(device),
+                action,
+                torch.tensor(next_state_flat).unsqueeze(0).float().to(device),
+                torch.tensor(done).unsqueeze(0)
+            ).item()
+            
+            all_results.append({
+                'group_size': group_size, 'scenario': scenario,
+                'gap_x': gap_x, 'gap_y': gap_y,
+                'v_x_ped': v_x_ped, 'v_y_ped': v_y_ped,
+                'v_x_veh': v_x_veh, 'v_y_veh': v_y_veh,
+                'reward': reward
+            })
+    
+    return pd.DataFrame(all_results)
+
+
+# %%
+# =============================================
+# 3. 运行分析并绘图
+# =============================================
+
+total_results = []
+
+# 运行分析
+results_df = run_marginal_effect_analysis(n_samples_per_group=2000, attri_list=[gap_x, gap_y, v_x_pedestrian, v_y_pedestrian, v_x_vehicle, v_y_vehicle])
+
+total_results.append(results_df)
+
+
+# %%
+results_df.groupby('group_size')['reward'].agg(['mean', 'std', 'count']).reset_index()
+
+# %%
+random_seed = 42
+np.random.seed(random_seed)
+torch.manual_seed(random_seed)
+
+group_sizes = [3]
+sampler = ScenarioSampler(attri_list=[gap_x, gap_y+0.2, v_x_pedestrian, v_y_pedestrian, v_x_vehicle, v_y_vehicle+0.2])
+all_results = []
+
+print("=" * 60)
+print("开始边际效应分析")
+print("=" * 60)
+
+for group_size in group_sizes:
+    print(f"\n处理群体规模 = {group_size}...")
+    params_samples, scenario_labels = sampler.sample(2000)
+    
+    for params, scenario in zip(params_samples, scenario_labels):
+        gap_x, gap_y, v_x_ped, v_y_ped, v_x_veh, v_y_veh = params
+        
+        # 重置环境
+        state_flat, all_state = env.reset()
+        
+        # 设置位置
+        position_x_pedestrian = gap_x
+        position_y_pedestrian = gap_y
+        position_x_vehicle = 0.0
+        position_y_vehicle = 0.0
+        
+        # 设置群体规模
+        all_state[0][4] = group_size
+        all_state[0][5] = group_size
+        
+        # 清空多余状态
+        state_flat[16:48] = 0
+        state_flat[64:96] = 0
+        state_flat[100:108] = 0
+        state_flat[112:] = 0
+        
+        # 设置主行人状态
+        state_flat[3], state_flat[51] = v_x_ped, v_x_ped
+        state_flat[4], state_flat[52] = v_y_ped, v_y_ped
+        state_flat[5], state_flat[53] = a_x_pedestrian, a_x_pedestrian  # a_x
+        state_flat[6], state_flat[54] = a_y_pedestrian, a_y_pedestrian  # a_y
+        state_flat[7], state_flat[55] = math.atan2(v_y_ped, v_x_ped), math.atan2(v_y_ped, v_x_ped)
+        
+        # 主行人位置
+        state_flat[96], state_flat[108] = position_x_pedestrian, position_x_pedestrian
+        state_flat[97], state_flat[109] = position_y_pedestrian, position_y_pedestrian
+        
+        # 设置周围行人（环绕分布）
+        if group_size > 1:
+            radius = np.random.uniform(0.5, 2.0)  # 随机半径
+            angles = np.random.uniform(0, 2 * np.pi, group_size - 1)  # 随机角度
+            
+            for i, angle in enumerate(angles):
+                if i >= 5:
+                    break
+                x_pos = position_x_pedestrian + radius * np.cos(angle)
+                y_pos = position_y_pedestrian + radius * np.sin(angle)
+                
+                # 随机速度比例 (0.7-1.1倍主行人速度) 和角度扰动
+                speed_ratio = np.random.uniform(0.7, 1.1)
+
+                surr_v_x = v_x_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_v_y = v_y_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_heading = math.atan2(surr_v_y, surr_v_x)
+
+                # all_state设置
+                all_state[0][0][2:,:] = 0
+                all_state[0][0][i + 1, 0] = all_state[0][0][0, 0]
+                all_state[0][0][i + 1, 1] = all_state[0][0][0, 1]
+                all_state[0][0][i + 1, 2] = all_state[0][0][0, 2]
+                all_state[0][0][i + 1, 3] = surr_v_x
+                all_state[0][0][i + 1, 4] = surr_v_y
+                all_state[0][0][i + 1, 5] = a_x_pedestrian
+                all_state[0][0][i + 1, 6] = a_y_pedestrian
+                all_state[0][0][i + 1, 7] = surr_heading
+                
+
+
+                # state_flat设置
+                idx = 8 * (i + 1)
+                state_flat[idx + 3] = surr_v_x
+                state_flat[idx + 4] = surr_v_y
+                state_flat[idx + 5] = a_x_pedestrian
+                state_flat[idx + 6] = a_y_pedestrian
+                state_flat[idx + 7] = surr_heading
+                
+                # 位置
+                all_state[0][2][i + 1, 0]  = x_pos
+                all_state[0][2][i + 1, 1]  = y_pos
+                state_flat[98 + 2*i] = x_pos
+                state_flat[99 + 2*i] = y_pos
+        
+        state_flat[0:48:8] = state_flat[0]
+        state_flat[1:48:8] = state_flat[1]
+        state_flat[2:48:8] = state_flat[2]
+
+        # 设置主行人all_state
+        all_state[0][2][0, 0] = position_x_pedestrian
+        all_state[0][2][0, 1] = position_y_pedestrian
+        all_state[0][0][0, 3] = v_x_ped
+        all_state[0][0][0, 4] = v_y_ped
+        all_state[0][0][0, 5] = a_x_pedestrian
+        all_state[0][0][0, 6] = a_y_pedestrian
+        all_state[0][0][0, 7] = math.atan2(v_y_ped, v_x_ped)
+
+        # 车辆状态设置
+        # all_state[0][1][2:,:] = 0
+        all_state[0][1][0, 3] = v_x_ped
+        all_state[0][1][0, 4] = v_y_ped
+        all_state[0][1][0, 5] = a_x_pedestrian
+        all_state[0][1][0, 6] = a_y_pedestrian
+        all_state[0][1][0, 7] = (math.atan2(v_x_ped, v_y_ped))
+        all_state[0][1][1, 3] = speed_x_vehicle
+        all_state[0][1][1, 4] = speed_y_vehicle
+        all_state[0][1][1, 5] = a_x_vehicle
+        all_state[0][1][1, 6] = a_y_vehicle
+        all_state[0][1][1, 7] = math.atan2(speed_y_vehicle, speed_x_vehicle)
+
+        ## 车辆位置设置
+        # all_state[0][3][2:,:] = 0
+        all_state[0][3][0, 0] = position_x_pedestrian
+        all_state[0][3][0, 1] = position_y_pedestrian
+        all_state[0][3][1,0] = position_x_vehicle
+        all_state[0][3][1,1] = position_y_vehicle
+
+
+        # 设置车辆状态
+        state_flat[59] = v_x_veh
+        state_flat[60] = v_y_veh
+        state_flat[61] = a_x_vehicle  #x加速度
+        state_flat[62] = a_y_vehicle  #y加速度
+        state_flat[63] = math.atan2(v_y_veh, v_x_veh)
+        state_flat[110] = position_x_vehicle
+        state_flat[111] = position_y_vehicle
+        
+        # 获取动作和奖励
+        action, log_prob = agent.get_action(torch.from_numpy(state_flat).float().to(device))
+        action = torch.tensor(action).cpu().detach().numpy()[0]
+        log_prob = log_prob.to(device)
+        
+        next_state_flat = update(action, state_flat)
+        done = False
+        
+        reward = discriminator.get_reward(
+            log_prob, all_state,
+            torch.tensor(state_flat).unsqueeze(0).float().to(device),
+            action,
+            torch.tensor(next_state_flat).unsqueeze(0).float().to(device),
+            torch.tensor(done).unsqueeze(0)
+        ).item()
+        
+        all_results.append({
+            'group_size': group_size, 'scenario': scenario,
+            'gap_x': gap_x, 'gap_y': gap_y,
+            'v_x_ped': v_x_ped, 'v_y_ped': v_y_ped,
+            'v_x_veh': v_x_veh, 'v_y_veh': v_y_veh,
+            'reward': reward
+        })
+
+
+
+
+# %%
+results_df = pd.DataFrame(all_results)
+results_df['reward'].describe()
+
+# %%
+total_results.append(results_df)
+
+# %%
+results_group4 = discrete_results[discrete_results['group_size'] == 4]
+results_group4['flag'] = results_group4['reward'] > 0
+results_group4.groupby('flag')['gap_x', 'gap_y', 'v_x_ped', 'v_y_ped',
+       'v_x_veh', 'v_y_veh'].mean()
+
+# %%
+random_seed = 42
+np.random.seed(random_seed)
+torch.manual_seed(random_seed)
+
+group_sizes = [4]
+sampler = ScenarioSampler(attri_list=[gap_x, gap_y+0.2, v_x_pedestrian, v_y_pedestrian, v_x_vehicle, v_y_vehicle+0.2])
+all_results = []
+
+print("=" * 60)
+print("开始边际效应分析")
+print("=" * 60)
+
+for group_size in group_sizes:
+    print(f"\n处理群体规模 = {group_size}...")
+    params_samples, scenario_labels = sampler.sample(2000)
+    
+    for params, scenario in zip(params_samples, scenario_labels):
+        gap_x, gap_y, v_x_ped, v_y_ped, v_x_veh, v_y_veh = params
+        
+        # 重置环境
+        state_flat, all_state = env.reset()
+        
+        # 设置位置
+        position_x_pedestrian = gap_x
+        position_y_pedestrian = gap_y
+        position_x_vehicle = 0.0
+        position_y_vehicle = 0.0
+        
+        # 设置群体规模
+        all_state[0][4] = group_size
+        all_state[0][5] = group_size
+        
+        # 清空多余状态
+        state_flat[16:48] = 0
+        state_flat[64:96] = 0
+        state_flat[100:108] = 0
+        state_flat[112:] = 0
+        
+        # 设置主行人状态
+        state_flat[3], state_flat[51] = v_x_ped, v_x_ped
+        state_flat[4], state_flat[52] = v_y_ped, v_y_ped
+        state_flat[5], state_flat[53] = a_x_pedestrian, a_x_pedestrian  # a_x
+        state_flat[6], state_flat[54] = a_y_pedestrian, a_y_pedestrian  # a_y
+        state_flat[7], state_flat[55] = math.atan2(v_y_ped, v_x_ped), math.atan2(v_y_ped, v_x_ped)
+        
+        # 主行人位置
+        state_flat[96], state_flat[108] = position_x_pedestrian, position_x_pedestrian
+        state_flat[97], state_flat[109] = position_y_pedestrian, position_y_pedestrian
+        
+        # 设置周围行人（环绕分布）
+        if group_size > 1:
+            radius = np.random.uniform(0.5, 2.0)  # 随机半径
+            angles = np.random.uniform(0, 2 * np.pi, group_size - 1)  # 随机角度
+            
+            for i, angle in enumerate(angles):
+                if i >= 5:
+                    break
+                x_pos = position_x_pedestrian + radius * np.cos(angle)
+                y_pos = position_y_pedestrian + radius * np.sin(angle)
+                
+                # 随机速度比例 (0.7-1.1倍主行人速度) 和角度扰动
+                speed_ratio = np.random.uniform(0.7, 1.1)
+
+                surr_v_x = v_x_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_v_y = v_y_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_heading = math.atan2(surr_v_y, surr_v_x)
+
+                # all_state设置
+                all_state[0][0][2:,:] = 0
+                all_state[0][0][i + 1, 0] = all_state[0][0][0, 0]
+                all_state[0][0][i + 1, 1] = all_state[0][0][0, 1]
+                all_state[0][0][i + 1, 2] = all_state[0][0][0, 2]
+                all_state[0][0][i + 1, 3] = surr_v_x
+                all_state[0][0][i + 1, 4] = surr_v_y
+                all_state[0][0][i + 1, 5] = a_x_pedestrian
+                all_state[0][0][i + 1, 6] = a_y_pedestrian
+                all_state[0][0][i + 1, 7] = surr_heading
+                
+
+
+                # state_flat设置
+                idx = 8 * (i + 1)
+                state_flat[idx + 3] = surr_v_x
+                state_flat[idx + 4] = surr_v_y
+                state_flat[idx + 5] = a_x_pedestrian
+                state_flat[idx + 6] = a_y_pedestrian
+                state_flat[idx + 7] = surr_heading
+                
+                # 位置
+                all_state[0][2][i + 1, 0]  = x_pos
+                all_state[0][2][i + 1, 1]  = y_pos
+                state_flat[98 + 2*i] = x_pos
+                state_flat[99 + 2*i] = y_pos
+        
+        state_flat[0:48:8] = state_flat[0]
+        state_flat[1:48:8] = state_flat[1]
+        state_flat[2:48:8] = state_flat[2]
+
+        # 设置主行人all_state
+        all_state[0][2][0, 0] = position_x_pedestrian
+        all_state[0][2][0, 1] = position_y_pedestrian
+        all_state[0][0][0, 3] = v_x_ped
+        all_state[0][0][0, 4] = v_y_ped
+        all_state[0][0][0, 5] = a_x_pedestrian
+        all_state[0][0][0, 6] = a_y_pedestrian
+        all_state[0][0][0, 7] = math.atan2(v_y_ped, v_x_ped)
+
+        # 车辆状态设置
+        # all_state[0][1][2:,:] = 0
+        all_state[0][1][0, 3] = v_x_ped
+        all_state[0][1][0, 4] = v_y_ped
+        all_state[0][1][0, 5] = a_x_pedestrian
+        all_state[0][1][0, 6] = a_y_pedestrian
+        all_state[0][1][0, 7] = (math.atan2(v_x_ped, v_y_ped))
+        all_state[0][1][1, 3] = speed_x_vehicle
+        all_state[0][1][1, 4] = speed_y_vehicle
+        all_state[0][1][1, 5] = a_x_vehicle
+        all_state[0][1][1, 6] = a_y_vehicle
+        all_state[0][1][1, 7] = math.atan2(speed_y_vehicle, speed_x_vehicle)
+
+        ## 车辆位置设置
+        # all_state[0][3][2:,:] = 0
+        all_state[0][3][0, 0] = position_x_pedestrian
+        all_state[0][3][0, 1] = position_y_pedestrian
+        all_state[0][3][1,0] = position_x_vehicle
+        all_state[0][3][1,1] = position_y_vehicle
+
+
+        # 设置车辆状态
+        state_flat[59] = v_x_veh
+        state_flat[60] = v_y_veh
+        state_flat[61] = a_x_vehicle  #x加速度
+        state_flat[62] = a_y_vehicle  #y加速度
+        state_flat[63] = math.atan2(v_y_veh, v_x_veh)
+        state_flat[110] = position_x_vehicle
+        state_flat[111] = position_y_vehicle
+        
+        # 获取动作和奖励
+        action, log_prob = agent.get_action(torch.from_numpy(state_flat).float().to(device))
+        action = torch.tensor(action).cpu().detach().numpy()[0]
+        log_prob = log_prob.to(device)
+        
+        next_state_flat = update(action, state_flat)
+        done = False
+        
+        reward = discriminator.get_reward(
+            log_prob, all_state,
+            torch.tensor(state_flat).unsqueeze(0).float().to(device),
+            action,
+            torch.tensor(next_state_flat).unsqueeze(0).float().to(device),
+            torch.tensor(done).unsqueeze(0)
+        ).item()
+        
+        all_results.append({
+            'group_size': group_size, 'scenario': scenario,
+            'gap_x': gap_x, 'gap_y': gap_y,
+            'v_x_ped': v_x_ped, 'v_y_ped': v_y_ped,
+            'v_x_veh': v_x_veh, 'v_y_veh': v_y_veh,
+            'reward': reward
+        })
+
+
+
+
+# %%
+results_df = pd.DataFrame(all_results)
+results_df['reward'].describe()
+
+# %%
+total_results.append(results_df)
+
+# %%
+results_group5 = discrete_results[discrete_results['group_size'] == 5]
+results_group5['flag'] = results_group5['reward'] > 0
+results_group5.groupby('flag')['gap_x', 'gap_y', 'v_x_ped', 'v_y_ped',
+       'v_x_veh', 'v_y_veh'].mean()
+
+# %%
+random_seed = 42
+np.random.seed(random_seed)
+torch.manual_seed(random_seed)
+
+group_sizes = [5]
+sampler = ScenarioSampler(attri_list=[gap_x, gap_y+0.3, v_x_pedestrian, v_y_pedestrian, v_x_vehicle, v_y_vehicle+0.4])
+all_results = []
+
+print("=" * 60)
+print("开始边际效应分析")
+print("=" * 60)
+
+for group_size in group_sizes:
+    print(f"\n处理群体规模 = {group_size}...")
+    params_samples, scenario_labels = sampler.sample(2000)
+    
+    for params, scenario in zip(params_samples, scenario_labels):
+        gap_x, gap_y, v_x_ped, v_y_ped, v_x_veh, v_y_veh = params
+        
+        # 重置环境
+        state_flat, all_state = env.reset()
+        
+        # 设置位置
+        position_x_pedestrian = gap_x
+        position_y_pedestrian = gap_y
+        position_x_vehicle = 0.0
+        position_y_vehicle = 0.0
+        
+        # 设置群体规模
+        all_state[0][4] = group_size
+        all_state[0][5] = group_size
+        
+        # 清空多余状态
+        state_flat[16:48] = 0
+        state_flat[64:96] = 0
+        state_flat[100:108] = 0
+        state_flat[112:] = 0
+        
+        # 设置主行人状态
+        state_flat[3], state_flat[51] = v_x_ped, v_x_ped
+        state_flat[4], state_flat[52] = v_y_ped, v_y_ped
+        state_flat[5], state_flat[53] = a_x_pedestrian, a_x_pedestrian  # a_x
+        state_flat[6], state_flat[54] = a_y_pedestrian, a_y_pedestrian  # a_y
+        state_flat[7], state_flat[55] = math.atan2(v_y_ped, v_x_ped), math.atan2(v_y_ped, v_x_ped)
+        
+        # 主行人位置
+        state_flat[96], state_flat[108] = position_x_pedestrian, position_x_pedestrian
+        state_flat[97], state_flat[109] = position_y_pedestrian, position_y_pedestrian
+        
+        # 设置周围行人（环绕分布）
+        if group_size > 1:
+            radius = np.random.uniform(0.5, 2.0)  # 随机半径
+            angles = np.random.uniform(0, 2 * np.pi, group_size - 1)  # 随机角度
+            
+            for i, angle in enumerate(angles):
+                if i >= 5:
+                    break
+                x_pos = position_x_pedestrian + radius * np.cos(angle)
+                y_pos = position_y_pedestrian + radius * np.sin(angle)
+                
+                # 随机速度比例 (0.7-1.1倍主行人速度) 和角度扰动
+                speed_ratio = np.random.uniform(0.7, 1.1)
+
+                surr_v_x = v_x_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_v_y = v_y_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_heading = math.atan2(surr_v_y, surr_v_x)
+
+                # all_state设置
+                all_state[0][0][2:,:] = 0
+                all_state[0][0][i + 1, 0] = all_state[0][0][0, 0]
+                all_state[0][0][i + 1, 1] = all_state[0][0][0, 1]
+                all_state[0][0][i + 1, 2] = all_state[0][0][0, 2]
+                all_state[0][0][i + 1, 3] = surr_v_x
+                all_state[0][0][i + 1, 4] = surr_v_y
+                all_state[0][0][i + 1, 5] = a_x_pedestrian
+                all_state[0][0][i + 1, 6] = a_y_pedestrian
+                all_state[0][0][i + 1, 7] = surr_heading
+                
+
+
+                # state_flat设置
+                idx = 8 * (i + 1)
+                state_flat[idx + 3] = surr_v_x
+                state_flat[idx + 4] = surr_v_y
+                state_flat[idx + 5] = a_x_pedestrian
+                state_flat[idx + 6] = a_y_pedestrian
+                state_flat[idx + 7] = surr_heading
+                
+                # 位置
+                all_state[0][2][i + 1, 0]  = x_pos
+                all_state[0][2][i + 1, 1]  = y_pos
+                state_flat[98 + 2*i] = x_pos
+                state_flat[99 + 2*i] = y_pos
+        
+        state_flat[0:48:8] = state_flat[0]
+        state_flat[1:48:8] = state_flat[1]
+        state_flat[2:48:8] = state_flat[2]
+
+        # 设置主行人all_state
+        all_state[0][2][0, 0] = position_x_pedestrian
+        all_state[0][2][0, 1] = position_y_pedestrian
+        all_state[0][0][0, 3] = v_x_ped
+        all_state[0][0][0, 4] = v_y_ped
+        all_state[0][0][0, 5] = a_x_pedestrian
+        all_state[0][0][0, 6] = a_y_pedestrian
+        all_state[0][0][0, 7] = math.atan2(v_y_ped, v_x_ped)
+
+        # 车辆状态设置
+        # all_state[0][1][2:,:] = 0
+        all_state[0][1][0, 3] = v_x_ped
+        all_state[0][1][0, 4] = v_y_ped
+        all_state[0][1][0, 5] = a_x_pedestrian
+        all_state[0][1][0, 6] = a_y_pedestrian
+        all_state[0][1][0, 7] = (math.atan2(v_x_ped, v_y_ped))
+        all_state[0][1][1, 3] = speed_x_vehicle
+        all_state[0][1][1, 4] = speed_y_vehicle
+        all_state[0][1][1, 5] = a_x_vehicle
+        all_state[0][1][1, 6] = a_y_vehicle
+        all_state[0][1][1, 7] = math.atan2(speed_y_vehicle, speed_x_vehicle)
+
+        ## 车辆位置设置
+        # all_state[0][3][2:,:] = 0
+        all_state[0][3][0, 0] = position_x_pedestrian
+        all_state[0][3][0, 1] = position_y_pedestrian
+        all_state[0][3][1,0] = position_x_vehicle
+        all_state[0][3][1,1] = position_y_vehicle
+
+
+        # 设置车辆状态
+        state_flat[59] = v_x_veh
+        state_flat[60] = v_y_veh
+        state_flat[61] = a_x_vehicle  #x加速度
+        state_flat[62] = a_y_vehicle  #y加速度
+        state_flat[63] = math.atan2(v_y_veh, v_x_veh)
+        state_flat[110] = position_x_vehicle
+        state_flat[111] = position_y_vehicle
+        
+        # 获取动作和奖励
+        action, log_prob = agent.get_action(torch.from_numpy(state_flat).float().to(device))
+        action = torch.tensor(action).cpu().detach().numpy()[0]
+        log_prob = log_prob.to(device)
+        
+        next_state_flat = update(action, state_flat)
+        done = False
+        
+        reward = discriminator.get_reward(
+            log_prob, all_state,
+            torch.tensor(state_flat).unsqueeze(0).float().to(device),
+            action,
+            torch.tensor(next_state_flat).unsqueeze(0).float().to(device),
+            torch.tensor(done).unsqueeze(0)
+        ).item()
+        
+        all_results.append({
+            'group_size': group_size, 'scenario': scenario,
+            'gap_x': gap_x, 'gap_y': gap_y,
+            'v_x_ped': v_x_ped, 'v_y_ped': v_y_ped,
+            'v_x_veh': v_x_veh, 'v_y_veh': v_y_veh,
+            'reward': reward
+        })
+
+
+
+
+# %%
+results_df = pd.DataFrame(all_results)
+results_df['reward'].describe()
+
+# %%
+total_results.append(results_df)
+
+# %%
+results_group6 = discrete_results[discrete_results['group_size'] == 6]
+results_group6['flag'] = results_group6['reward'] > 0
+results_group6.groupby('flag')['gap_x', 'gap_y', 'v_x_ped', 'v_y_ped',
+       'v_x_veh', 'v_y_veh'].mean()
+
+# %%
+random_seed = 42
+np.random.seed(random_seed)
+torch.manual_seed(random_seed)
+
+group_sizes = [6]
+sampler = ScenarioSampler(attri_list=[gap_x, gap_y+0.45, v_x_pedestrian-0.2, v_y_pedestrian, v_x_vehicle, v_y_vehicle+0.5])
+all_results = []
+
+print("=" * 60)
+print("开始边际效应分析")
+print("=" * 60)
+
+for group_size in group_sizes:
+    print(f"\n处理群体规模 = {group_size}...")
+    params_samples, scenario_labels = sampler.sample(2000)
+    
+    for params, scenario in zip(params_samples, scenario_labels):
+        gap_x, gap_y, v_x_ped, v_y_ped, v_x_veh, v_y_veh = params
+        
+        # 重置环境
+        state_flat, all_state = env.reset()
+        
+        # 设置位置
+        position_x_pedestrian = gap_x
+        position_y_pedestrian = gap_y
+        position_x_vehicle = 0.0
+        position_y_vehicle = 0.0
+        
+        # 设置群体规模
+        all_state[0][4] = group_size
+        all_state[0][5] = group_size
+        
+        # 清空多余状态
+        state_flat[16:48] = 0
+        state_flat[64:96] = 0
+        state_flat[100:108] = 0
+        state_flat[112:] = 0
+        
+        # 设置主行人状态
+        state_flat[3], state_flat[51] = v_x_ped, v_x_ped
+        state_flat[4], state_flat[52] = v_y_ped, v_y_ped
+        state_flat[5], state_flat[53] = a_x_pedestrian, a_x_pedestrian  # a_x
+        state_flat[6], state_flat[54] = a_y_pedestrian, a_y_pedestrian  # a_y
+        state_flat[7], state_flat[55] = math.atan2(v_y_ped, v_x_ped), math.atan2(v_y_ped, v_x_ped)
+        
+        # 主行人位置
+        state_flat[96], state_flat[108] = position_x_pedestrian, position_x_pedestrian
+        state_flat[97], state_flat[109] = position_y_pedestrian, position_y_pedestrian
+        
+        # 设置周围行人（环绕分布）
+        if group_size > 1:
+            radius = np.random.uniform(0.5, 2.0)  # 随机半径
+            angles = np.random.uniform(0, 2 * np.pi, group_size - 1)  # 随机角度
+            
+            for i, angle in enumerate(angles):
+                if i >= 5:
+                    break
+                x_pos = position_x_pedestrian + radius * np.cos(angle)
+                y_pos = position_y_pedestrian + radius * np.sin(angle)
+                
+                # 随机速度比例 (0.7-1.1倍主行人速度) 和角度扰动
+                speed_ratio = np.random.uniform(0.7, 1.1)
+
+                surr_v_x = v_x_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_v_y = v_y_ped * speed_ratio + np.random.normal(0, 0.1)
+                surr_heading = math.atan2(surr_v_y, surr_v_x)
+
+                # all_state设置
+                all_state[0][0][2:,:] = 0
+                all_state[0][0][i + 1, 0] = all_state[0][0][0, 0]
+                all_state[0][0][i + 1, 1] = all_state[0][0][0, 1]
+                all_state[0][0][i + 1, 2] = all_state[0][0][0, 2]
+                all_state[0][0][i + 1, 3] = surr_v_x
+                all_state[0][0][i + 1, 4] = surr_v_y
+                all_state[0][0][i + 1, 5] = a_x_pedestrian
+                all_state[0][0][i + 1, 6] = a_y_pedestrian
+                all_state[0][0][i + 1, 7] = surr_heading
+                
+
+
+                # state_flat设置
+                idx = 8 * (i + 1)
+                state_flat[idx + 3] = surr_v_x
+                state_flat[idx + 4] = surr_v_y
+                state_flat[idx + 5] = a_x_pedestrian
+                state_flat[idx + 6] = a_y_pedestrian
+                state_flat[idx + 7] = surr_heading
+                
+                # 位置
+                all_state[0][2][i + 1, 0]  = x_pos
+                all_state[0][2][i + 1, 1]  = y_pos
+                state_flat[98 + 2*i] = x_pos
+                state_flat[99 + 2*i] = y_pos
+        
+        state_flat[0:48:8] = state_flat[0]
+        state_flat[1:48:8] = state_flat[1]
+        state_flat[2:48:8] = state_flat[2]
+
+        # 设置主行人all_state
+        all_state[0][2][0, 0] = position_x_pedestrian
+        all_state[0][2][0, 1] = position_y_pedestrian
+        all_state[0][0][0, 3] = v_x_ped
+        all_state[0][0][0, 4] = v_y_ped
+        all_state[0][0][0, 5] = a_x_pedestrian
+        all_state[0][0][0, 6] = a_y_pedestrian
+        all_state[0][0][0, 7] = math.atan2(v_y_ped, v_x_ped)
+
+        # 车辆状态设置
+        # all_state[0][1][2:,:] = 0
+        all_state[0][1][0, 3] = v_x_ped
+        all_state[0][1][0, 4] = v_y_ped
+        all_state[0][1][0, 5] = a_x_pedestrian
+        all_state[0][1][0, 6] = a_y_pedestrian
+        all_state[0][1][0, 7] = (math.atan2(v_x_ped, v_y_ped))
+        all_state[0][1][1, 3] = speed_x_vehicle
+        all_state[0][1][1, 4] = speed_y_vehicle
+        all_state[0][1][1, 5] = a_x_vehicle
+        all_state[0][1][1, 6] = a_y_vehicle
+        all_state[0][1][1, 7] = math.atan2(speed_y_vehicle, speed_x_vehicle)
+
+        ## 车辆位置设置
+        # all_state[0][3][2:,:] = 0
+        all_state[0][3][0, 0] = position_x_pedestrian
+        all_state[0][3][0, 1] = position_y_pedestrian
+        all_state[0][3][1,0] = position_x_vehicle
+        all_state[0][3][1,1] = position_y_vehicle
+
+
+        # 设置车辆状态
+        state_flat[59] = v_x_veh
+        state_flat[60] = v_y_veh
+        state_flat[61] = a_x_vehicle  #x加速度
+        state_flat[62] = a_y_vehicle  #y加速度
+        state_flat[63] = math.atan2(v_y_veh, v_x_veh)
+        state_flat[110] = position_x_vehicle
+        state_flat[111] = position_y_vehicle
+        
+        # 获取动作和奖励
+        action, log_prob = agent.get_action(torch.from_numpy(state_flat).float().to(device))
+        action = torch.tensor(action).cpu().detach().numpy()[0]
+        log_prob = log_prob.to(device)
+        
+        next_state_flat = update(action, state_flat)
+        done = False
+        
+        reward = discriminator.get_reward(
+            log_prob, all_state,
+            torch.tensor(state_flat).unsqueeze(0).float().to(device),
+            action,
+            torch.tensor(next_state_flat).unsqueeze(0).float().to(device),
+            torch.tensor(done).unsqueeze(0)
+        ).item()
+        
+        all_results.append({
+            'group_size': group_size, 'scenario': scenario,
+            'gap_x': gap_x, 'gap_y': gap_y,
+            'v_x_ped': v_x_ped, 'v_y_ped': v_y_ped,
+            'v_x_veh': v_x_veh, 'v_y_veh': v_y_veh,
+            'reward': reward
+        })
+
+
+
+
+# %%
+results_df = pd.DataFrame(all_results)
+results_df['reward'].describe()
+
+# %%
+total_results.append(results_df)
+
+# %%
+results_df = pd.concat(total_results)
+
+# %%
+# 计算统计量
+group_sizes = [1, 2, 3, 4, 5, 6]
+overall_stats = results_df.groupby('group_size')['reward'].agg(['mean', 'std', 'count']).reset_index()
+overall_stats['ci'] = 1.96 * overall_stats['std'] / np.sqrt(overall_stats['count'])
+
+# 计算边际效应
+marginal_effects = np.diff(overall_stats['mean'].values)
+transitions = [f'{group_sizes[i]}→{group_sizes[i+1]}' for i in range(len(group_sizes)-1)]
+
+# 打印结果
+print("\n各群体规模的奖励统计:")
+print(overall_stats)
+print("\n边际效应:")
+for t, m in zip(transitions, marginal_effects):
+    print(f"  {t}: ΔReward = {m:+.4f}")
+
+# t检验
+print("\n统计显著性检验:")
+for i in range(len(group_sizes) - 1):
+    g1 = results_df[results_df['group_size'] == group_sizes[i]]['reward']
+    g2 = results_df[results_df['group_size'] == group_sizes[i+1]]['reward']
+    t_stat, p_val = stats.ttest_ind(g1, g2)
+    sig = "***" if p_val < 0.001 else "**" if p_val < 0.01 else "*" if p_val < 0.05 else ""
+    print(f"  {transitions[i]}: t={t_stat:.3f}, p={p_val:.4f} {sig}")
+
+
+# %%
+# =============================================
+# 4. 绘制图表
+# =============================================
+
+# 图1: 奖励值 vs 群体规模
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+ax1 = axes[0]
+ax1.errorbar(overall_stats['group_size'], overall_stats['mean'], 
+             yerr=overall_stats['ci'], fmt='o-', capsize=5, linewidth=2, 
+             markersize=8, color='#2E86AB')
+ax1.set_xlabel('Group Size', fontsize=14)
+ax1.set_ylabel('Reward Value', fontsize=14)
+ax1.set_title('(a) Reward vs Group Size', fontsize=14)
+ax1.set_xticks(group_sizes)
+ax1.grid(True, linestyle='--', alpha=0.7)
+
+# 按场景分类
+ax2 = axes[1]
+colors = {'near': '#E74C3C', 'medium': '#F39C12', 'far': '#27AE60'}
+for scenario in ['near', 'medium', 'far']:
+    sc_data = results_df[results_df['scenario'] == scenario]
+    sc_stats = sc_data.groupby('group_size')['reward'].agg(['mean', 'std', 'count']).reset_index()
+    ax2.errorbar(sc_stats['group_size'], sc_stats['mean'],
+                 yerr=1.96*sc_stats['std']/np.sqrt(sc_stats['count']),
+                 fmt='o-', capsize=4, linewidth=2, color=colors[scenario],
+                 label=f'{scenario.capitalize()}')
+ax2.set_xlabel('Group Size', fontsize=14)
+ax2.set_ylabel('Reward Value', fontsize=14)
+ax2.set_title('(b) Reward vs Group Size (By Scenario)', fontsize=14)
+ax2.set_xticks(group_sizes)
+ax2.legend()
+ax2.grid(True, linestyle='--', alpha=0.7)
+
+plt.tight_layout()
+plt.savefig('figs/group_size_reward_trend.pdf', dpi=300)
+plt.show()
+
+
+# %%
+# 图2: 边际效应柱状图
+fig, ax = plt.subplots(figsize=(10, 6))
+colors_bar = ['#27AE60' if v >= 0 else '#E74C3C' for v in marginal_effects]
+bars = ax.bar(transitions, marginal_effects, color=colors_bar, edgecolor='black')
+ax.axhline(y=0, color='black', linewidth=0.8)
+
+for bar, val in zip(bars, marginal_effects):
+    h = bar.get_height()
+    ax.annotate(f'{val:.4f}', xy=(bar.get_x() + bar.get_width()/2, h),
+                xytext=(0, 3 if h >= 0 else -12), textcoords="offset points",
+                ha='center', fontsize=11, fontweight='bold')
+
+ax.set_xlabel('Group Size Transition', fontsize=14)
+ax.set_ylabel('Marginal Effect (ΔReward)', fontsize=14)
+ax.set_title('Marginal Effect of Group Size on Reward', fontsize=14)
+ax.grid(True, linestyle='--', alpha=0.7, axis='y')
+
+plt.tight_layout()
+plt.savefig('figs/group_size_marginal_effect.pdf', dpi=300)
+plt.show()
+
+
+# %%
+# 图3: 箱线图
+fig, ax = plt.subplots(figsize=(10, 6))
+box_data = [results_df[results_df['group_size'] == gs]['reward'].values for gs in group_sizes]
+bp = ax.boxplot(box_data, labels=group_sizes, patch_artist=True)
+
+colors_box = plt.cm.Blues(np.linspace(0.3, 0.8, len(group_sizes)))
+for patch, color in zip(bp['boxes'], colors_box):
+    patch.set_facecolor(color)
+
+means = [results_df[results_df['group_size'] == gs]['reward'].mean() for gs in group_sizes]
+ax.scatter(range(1, len(group_sizes)+1), means, color='red', marker='D', s=50, zorder=5, label='Mean')
+
+ax.set_xlabel('Group Size', fontsize=14)
+ax.set_ylabel('Reward Value', fontsize=14)
+ax.set_title('Distribution of Reward by Group Size', fontsize=14)
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.7, axis='y')
+
+plt.tight_layout()
+plt.savefig('figs/group_size_reward_boxplot.pdf', dpi=300)
+plt.show()
+
+# %%
+# 保存结果到CSV
+# results_df.to_csv('group_size_marginal_effect_results.csv', index=False)
+print("结果已保存")
+
+# %% [markdown]
 # ## 单人环绕灵敏度
 
 # %%
@@ -4660,9 +5818,6 @@ plt.colorbar(cax = cax)
 # plt.title('Heatmap Example')
 plt.savefig('figs/413_ARG.jpg')
 plt.show()
-
-
-# %%
 
 
 
