@@ -171,7 +171,7 @@ if agent_args.on_policy == True:
             print("# of episode :{}, avg score : {:.1f}".format(n_epi, sum(score_lst)/len(score_lst)))
             score_lst = []
         if (n_epi % args.save_interval == 0 )& (n_epi != 0):
-            torch.save(agent.state_dict(), './model_weights/model_'+str(n_epi))
+            torch.save(agent.state_dict(), './model_weights_without_game/model_'+str(n_epi))
 else : #off-policy
     for n_epi in range(args.epochs):
         score = 0.0
@@ -275,8 +275,8 @@ else : #off-policy
             # if (tra_mae[0]<1)&(tra_mae[1]<1)&(speed_mae[0]<1)&(speed_mae[1]<1)&(tra_hd[0]<0.5)&(tra_hd[1]<0.5)&(speed_hd[0]<0.5)&(speed_hd[1]<0.5):
             if (tra_mae[0]<1.5)&(tra_mae[1]<1.5) | (n_epi % 1000 == 0):
 
-                discriminator.save(f'./model_weights/{[tra_mae[0],tra_mae[1],speed_mae[0],speed_mae[1],tra_hd[0],tra_hd[1],speed_hd[0],speed_hd[1],n_epi]}')
-                agent.brain.save(f'./model_weights/{[tra_mae[0],tra_mae[1],speed_mae[0],speed_mae[1],tra_hd[0],tra_hd[1],speed_hd[0],speed_hd[1],n_epi]}')
+                discriminator.save(f'./model_weights_without_game/{[tra_mae[0],tra_mae[1],speed_mae[0],speed_mae[1],tra_hd[0],tra_hd[1],speed_hd[0],speed_hd[1],n_epi]}')
+                agent.brain.save(f'./model_weights_without_game/{[tra_mae[0],tra_mae[1],speed_mae[0],speed_mae[1],tra_hd[0],tra_hd[1],speed_hd[0],speed_hd[1],n_epi]}')
             # if (n_epi % 150 == 0):
             #     discriminator.save(f'./model_weights/150')
             #     agent.brain.save(f'./model_weights/150')
